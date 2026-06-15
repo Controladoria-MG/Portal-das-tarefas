@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Relatório de Tarefas - MG Controle</title>
+  <link rel="stylesheet" href="static/styles.css" />
+</head>
+<body>
+
+  <!-- Loading -->
+  <div class="loading" id="loading">
+    <div class="loading-box">
+      <div class="loading-spinner"></div>
+      <p>Carregando base de dados...</p>
+    </div>
+  </div>
+
+  <!-- Barra superior -->
+  <header class="topbar">
+    <img src="dados/imagens/logo.png" alt="MG Controle" class="topbar-logo" />
+    <h1 class="topbar-title">Relatório de Tarefas - MG Controle</h1>
+  </header>
+
+  <!-- Breadcrumb de navegação -->
+  <div class="unidade-bar hidden" id="unidade-bar">
+    <span id="bar-crumbs"></span>
+  </div>
+
+  <!-- Tela 1: Painel de unidades -->
+  <main class="container" id="tela-1">
+    <h2 class="subtitle">Painel de controle</h2>
+    <div class="cards-grid" id="cards-grid"></div>
+  </main>
+
+  <!-- Tela 2: Detalhe da unidade -->
+  <main class="container hidden" id="tela-2">
+    <button class="btn-voltar" onclick="mostrarTela1()">&#8592; Voltar</button>
+    <div class="placares-grid" id="placares-tela2"></div>
+    <h3 class="deps-titulo">Departamentos</h3>
+    <div class="deps-grid" id="deps-grid"></div>
+  </main>
+
+  <!-- Tela 3: Detalhe do departamento -->
+  <main class="container hidden" id="tela-3">
+    <button class="btn-voltar" onclick="voltarTela2()">&#8592; Voltar</button>
+    <div class="placares-grid" id="placares-tela3"></div>
+
+    <!-- Relatórios -->
+    <div class="secao">
+      <div class="secao-titulo">Relatórios</div>
+
+      <div class="filtros-barra">
+        <div class="filtro-item">
+          <label for="rel-coordenador">Coordenação</label>
+          <select id="rel-coordenador" onchange="aplicarFiltroRel()"><option value="">Todos</option></select>
+        </div>
+        <div class="filtro-item">
+          <label for="rel-responsavel">Responsável</label>
+          <select id="rel-responsavel" onchange="aplicarFiltroRel()"><option value="">Todos</option></select>
+        </div>
+        <div class="filtro-item">
+          <label for="rel-grupo">Grupo</label>
+          <select id="rel-grupo" onchange="aplicarFiltroRel()"><option value="">Todos</option></select>
+        </div>
+        <div class="filtro-item filtro-busca">
+          <label for="rel-busca">Buscar</label>
+          <input type="text" id="rel-busca" placeholder="Digite qualquer coisa..." oninput="agendarBuscaRel()" />
+        </div>
+        <button class="btn-limpar" onclick="limparFiltros('rel')">Limpar</button>
+      </div>
+
+      <div class="relatorio-acoes">
+        <button class="btn-relatorio btn-pdf" onclick="gerarPDF()">RELATÓRIO PDF</button>
+        <button class="btn-relatorio btn-excel">RELATÓRIO EXCEL</button>
+      </div>
+
+      <div class="baixadas-grid" id="baixadas-grid"></div>
+    </div>
+
+    <!-- Tarefas -->
+    <div class="secao">
+      <div class="secao-titulo">Tarefas</div>
+
+      <div class="filtros-barra">
+        <div class="filtro-item">
+          <label for="tab-coordenador">Coordenação</label>
+          <select id="tab-coordenador" onchange="aplicarFiltroTab()"><option value="">Todos</option></select>
+        </div>
+        <div class="filtro-item">
+          <label for="tab-responsavel">Responsável</label>
+          <select id="tab-responsavel" onchange="aplicarFiltroTab()"><option value="">Todos</option></select>
+        </div>
+        <div class="filtro-item">
+          <label for="tab-grupo">Grupo</label>
+          <select id="tab-grupo" onchange="aplicarFiltroTab()"><option value="">Todos</option></select>
+        </div>
+        <div class="filtro-item filtro-busca">
+          <label for="tab-busca">Buscar</label>
+          <input type="text" id="tab-busca" placeholder="Digite qualquer coisa..." oninput="agendarBuscaTab()" />
+        </div>
+        <button class="btn-limpar" onclick="limparFiltros('tab')">Limpar</button>
+      </div>
+
+      <div class="tabs">
+        <button class="tab ativo" data-status="Em Atraso" onclick="mudarAba(this)">Em Atraso</button>
+        <button class="tab" data-status="Em Aberto" onclick="mudarAba(this)">Em Aberto</button>
+        <button class="tab" data-status="Baixado" onclick="mudarAba(this)">Baixadas</button>
+      </div>
+      <div class="tabela-wrapper">
+        <table class="tabela-tarefas">
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Grupo</th>
+              <th>Tarefa</th>
+              <th>Responsável</th>
+              <th>Vencimento</th>
+              <th>Previsão</th>
+              <th>Comentário</th>
+            </tr>
+          </thead>
+          <tbody id="tabela-corpo"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <script src="static/app.js"></script>
+</body>
+</html>
