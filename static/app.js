@@ -1,25 +1,28 @@
+// ── Unidades ─────────────────────────────────────────────
+const UNIDADES = [
+  { cod: 'SP',     nome: 'São Paulo',      arquivo: 'dados/base/sao_paulo.xlsx' },
+  { cod: 'GOIAS',  nome: 'Goiás',          arquivo: 'dados/base/goias.xlsx' },
+  { cod: 'RJ',     nome: 'Rio de Janeiro', arquivo: 'dados/base/rio_de_janeiro.xlsx' },
+  { cod: 'Santos', nome: 'Santos',         arquivo: 'dados/base/santos.xlsx' },
+];
+
 // ── Estado ───────────────────────────────────────────────
-let DATA = [];
+const DADOS_UNIDADE      = {};   // cod → array de rows
+const PROMESSAS          = {};   // cod → Promise
+const DATAS_ATUALIZACAO  = {};   // cod → string data formatada
 
 const estado = {
-  unidade:     null,
-  unidadeRows: [],
+  unidade:      null,
+  unidadeRows:  [],
   departamento: null,
-  depRows:     [],
-  abaAtiva:    'Em Atraso',
+  depRows:      [],
+  abaAtiva:     'Em Atraso',
 };
 
 const filtrosRel = { coordenador: '', responsavel: '', grupo: '', busca: '' };
 const filtrosTab = { coordenador: '', responsavel: '', grupo: '', busca: '' };
 let buscaTimerRel = null;
 let buscaTimerTab = null;
-
-const NOME_UNIDADE = {
-  'SP':     'São Paulo',
-  'GOIAS':  'Goiás',
-  'Santos': 'Santos',
-  'RJ':     'Rio de Janeiro',
-};
 
 // ── Utilitários ───────────────────────────────────────────
 function esc(s) {
@@ -33,37 +36,53 @@ function esc(s) {
 
 function fmtData(v) {
   if (!v) return '';
-  if (v instanceof Date) {
-    return v.toLocaleDateString('pt-BR');
-  }
+  if (v instanceof Date) return v.toLocaleDateString('pt-BR');
   return String(v);
 }
 
 function contarStatus(rows) {
   let emAtraso = 0, emAberto = 0, baixadas = 0;
   for (const r of rows) {
-    if (r.Status === 'Em Atraso') emAtraso++;
+    if      (r.Status === 'Em Atraso') emAtraso++;
     else if (r.Status === 'Em Aberto') emAberto++;
     else if (r.Status === 'Baixado')   baixadas++;
   }
   return { total: rows.length, emAtraso, emAberto, baixadas };
 }
 
-// ── Carregamento SheetJS ──────────────────────────────────
-async function carregarDados() {
-  try {
-    const resp = await fetch('dados/base/base.xlsx');
-    const buf  = await resp.arrayBuffer();
-    const wb   = XLSX.read(buf, { type: 'array', cellDates: true });
-    const ws   = wb.Sheets['Pendencias'];
-    DATA = XLSX.utils.sheet_to_json(ws, { raw: true });
+// ── Carregamento ──────────────────────────────────────────
+function _carregarArquivo(cod, arquivo) {
+  PROMESSAS[cod] = fetch(arquivo)
+    .then(r => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const lastMod = r.headers.get('Last-Modified');
+      if (lastMod) {
+        DATAS_ATUALIZACAO[cod] = new Date(lastMod).toLocaleDateString('pt-BR');
+      }
+      return r.arrayBuffer();
+    })
+    .then(buf => {
+      const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+      const ws = wb.Sheets['Pendencias'];
+      DADOS_UNIDADE[cod] = XLSX.utils.sheet_to_json(ws, { raw: true });
+    })
+    .catch(err => {
+      DADOS_UNIDADE[cod] = null;
+      console.error(`Erro ao carregar ${arquivo}:`, err);
+    });
+}
 
-    document.getElementById('loading').style.display = 'none';
-    renderCards();
-  } catch (e) {
-    document.getElementById('loading').innerHTML =
-      '<div class="loading-box"><p style="color:#C00000">Erro ao carregar base de dados.<br>Verifique o arquivo e recarregue.</p></div>';
+async function iniciarCarregamento() {
+  UNIDADES.forEach(u => _carregarArquivo(u.cod, u.arquivo));
+  await Promise.all(UNIDADES.map(u => PROMESSAS[u.cod]));
+
+  const dataBase = Object.values(DATAS_ATUALIZACAO).find(Boolean);
+  if (dataBase) {
+    document.getElementById('topbar-atualizacao').textContent = `Base atualizada em ${dataBase}`;
   }
+
+  document.getElementById('loading').style.display = 'none';
+  renderCards();
 }
 
 // ── Breadcrumb ────────────────────────────────────────────
@@ -101,29 +120,33 @@ function renderPlacares(containerId, rows) {
 
 // ── Tela 1 ───────────────────────────────────────────────
 function renderCards() {
-  const grid = document.getElementById('cards-grid');
-  const unidadeCods = [...new Set(DATA.map(r => r.Unidade).filter(Boolean))].sort();
-
-  grid.innerHTML = unidadeCods.map(cod => {
-    const nome = NOME_UNIDADE[cod] || cod;
-    const rows = DATA.filter(r => r.Unidade === cod);
-    const c    = contarStatus(rows);
-    return `
-      <div class="card" onclick="mostrarTela2('${cod}', '${esc(nome)}')">
-        <div class="card-unit">${esc(nome)}</div>
-        <div class="card-info">
-          <span class="card-count">${c.total.toLocaleString('pt-BR')}</span>
-          <span class="card-label">- Tarefas</span>
-        </div>
-        <div class="card-footer">Clique para ver os detalhes</div>
-      </div>`;
-  }).join('');
+  document.getElementById('cards-grid').innerHTML = UNIDADES.map(u => `
+    <div class="card" onclick="mostrarTela2('${u.cod}', '${esc(u.nome)}')">
+      <div class="card-unit">${esc(u.nome)}</div>
+      <div class="card-footer">Clique para ver os detalhes</div>
+    </div>`).join('');
 }
 
 // ── Tela 2 ───────────────────────────────────────────────
-function mostrarTela2(cod, nome) {
+async function mostrarTela2(cod, nome) {
+  if (!DADOS_UNIDADE[cod]) {
+    const loading = document.getElementById('loading');
+    loading.querySelector('p').textContent = `Carregando ${nome}...`;
+    loading.style.display = 'flex';
+    try {
+      await PROMESSAS[cod];
+    } finally {
+      loading.style.display = 'none';
+    }
+  }
+
+  if (DADOS_UNIDADE[cod] === null) {
+    alert(`Erro ao carregar os dados de ${nome}. Verifique o arquivo e recarregue a página.`);
+    return;
+  }
+
   estado.unidade     = { cod, nome };
-  estado.unidadeRows = DATA.filter(r => r.Unidade === cod);
+  estado.unidadeRows = DADOS_UNIDADE[cod];
 
   setBreadcrumb(['Painel de controle', nome]);
   renderPlacares('placares-tela2', estado.unidadeRows);
@@ -241,7 +264,6 @@ async function gerarPDF() {
   const PW = doc.internal.pageSize.getWidth();
   const PH = doc.internal.pageSize.getHeight();
 
-  // ── Semanas do mês atual (blocos de 7 dias a partir do dia 1) ──
   const agora  = new Date();
   const ano    = agora.getFullYear();
   const mes    = agora.getMonth();
@@ -255,7 +277,6 @@ async function gerarPDF() {
     semanas.push({ ini, fim, label });
   }
 
-  // ── Dados filtrados (baixadas do mês corrente) ──
   const base = filtrarRows(
     estado.depRows.filter(r =>
       r.Status === 'Baixado' &&
@@ -266,7 +287,6 @@ async function gerarPDF() {
     filtrosRel
   );
 
-  // ── Agrupamento por funcionário ──
   const empMap = {};
   for (const r of base) {
     const nome  = String(r.UsuarioResponsavel || '').trim();
@@ -283,7 +303,6 @@ async function gerarPDF() {
   const totSem  = semanas.map((_, i) => empRows.reduce((s, e) => s + e.qtds[i], 0));
   const totGeral = empRows.reduce((s, e) => s + e.total, 0);
 
-  // ── Logo (tentativa; silencioso se falhar) ──
   let logoB64 = null;
   try {
     const r = await fetch('dados/imagens/logo.png');
@@ -295,7 +314,6 @@ async function gerarPDF() {
     });
   } catch (_) {}
 
-  // ── Cabeçalho (todas as páginas via didDrawPage) ──
   const nomeMes = agora.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
   const dataGer = agora.toLocaleDateString('pt-BR');
   const subHead = `${estado.unidade.nome}  —  ${estado.departamento}`;
@@ -307,37 +325,25 @@ async function gerarPDF() {
   ].filter(Boolean);
   const filtrosStr = filtrosAtivos.length ? filtrosAtivos.join('  |  ') : 'Sem filtros ativos';
 
-  function desenharCabecalho(pageNum) {
-    // Faixa vermelha
+  function desenharCabecalho() {
     doc.setFillColor(192, 0, 0);
     doc.rect(0, 0, PW, 18, 'F');
-
-    // Logo
     if (logoB64) doc.addImage(logoB64, 'PNG', 6, 3.5, 14, 10);
-
-    // Título
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(13);
     doc.setFont('helvetica', 'bold');
     doc.text('MG Contécnica — Relatório de Baixas', logoB64 ? 24 : 10, 11.5);
-
-    // Sub-cabeçalho: unidade — departamento
     doc.setTextColor(18, 18, 18);
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.text(subHead, 10, 23);
-
-    // Linha decorativa fina vermelho-suave
     doc.setDrawColor(192, 0, 0);
     doc.setLineWidth(0.35);
     doc.line(10, 25.8, PW - 10, 25.8);
-
-    // Período + filtros numa linha só
     doc.setTextColor(110, 110, 110);
     doc.setFontSize(7.5);
     doc.setFont('helvetica', 'normal');
-    const periodoInfo = `${nomeMes}  ·  Gerado em ${dataGer}  ·  Filtros: ${filtrosStr}`;
-    doc.text(periodoInfo, 10, 30.5);
+    doc.text(`${nomeMes}  ·  Gerado em ${dataGer}  ·  Filtros: ${filtrosStr}`, 10, 30.5);
   }
 
   function desenharRodape(pageNum, totalPages) {
@@ -348,7 +354,6 @@ async function gerarPDF() {
     doc.text(`Página ${pageNum} de ${totalPages}`, PW - 10, PH - 5, { align: 'right' });
   }
 
-  // ── Colunas da tabela ──
   const cols = [
     { header: 'Funcionário', dataKey: 'nome' },
     { header: 'Coordenador', dataKey: 'coord' },
@@ -361,24 +366,16 @@ async function gerarPDF() {
     e.qtds.forEach((v, i) => { row[`s${i}`] = v > 0 ? v : '—'; });
     return row;
   });
-  // Linha de totais
   const totalRow = { nome: 'TOTAL', coord: '', total: totGeral };
   totSem.forEach((v, i) => { totalRow[`s${i}`] = v > 0 ? v : '—'; });
   tableBody.push(totalRow);
 
-  // ── AutoTable ──
   doc.autoTable({
     startY: 34,
     columns: cols,
     body: tableBody,
     styles: { fontSize: 8, textColor: [18, 18, 18], cellPadding: { top: 3, right: 4, bottom: 3, left: 4 } },
-    headStyles: {
-      fillColor: [26, 26, 26],
-      textColor: [255, 255, 255],
-      fontStyle: 'bold',
-      halign: 'center',
-      valign: 'middle',
-    },
+    headStyles: { fillColor: [26, 26, 26], textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center', valign: 'middle' },
     columnStyles: {
       nome:  { cellWidth: 52 },
       coord: { cellWidth: 48 },
@@ -386,33 +383,25 @@ async function gerarPDF() {
       ...Object.fromEntries(semanas.map((_, i) => [`s${i}`, { halign: 'center', cellWidth: 'auto' }])),
     },
     didParseCell(data) {
-      // Linha de totais em negrito com fundo cinza
       if (data.row.index === tableBody.length - 1) {
         data.cell.styles.fontStyle = 'bold';
         data.cell.styles.fillColor = [235, 235, 235];
         data.cell.styles.textColor = [30, 30, 30];
       }
-      // Linhas em tiras: par = cinza suave, ímpar = branco
       if (data.section === 'body' && data.row.index < tableBody.length - 1) {
         data.cell.styles.fillColor = data.row.index % 2 === 0 ? [244, 244, 248] : [255, 255, 255];
       }
     },
-    didDrawPage(data) {
-      desenharCabecalho(data.pageNumber);
-    },
+    didDrawPage() { desenharCabecalho(); },
     margin: { top: 34, left: 10, right: 10, bottom: 12 },
   });
 
-  // ── Página do gráfico de colunas ──
   const chartDados = [...empRows].filter(e => e.total > 0).sort((a, b) => b.total - a.total);
   if (chartDados.length > 0) {
     doc.addPage();
-    desenharCabecalho(doc.internal.getNumberOfPages());
+    desenharCabecalho();
 
-    const mL = 22;
-    const mR = 12;
-    const cTop = 40;
-    const cLabH = 34;
+    const mL = 22, mR = 12, cTop = 40, cLabH = 34;
     const cH = PH - cTop - cLabH - 14;
     const cW = PW - mL - mR;
     const n = chartDados.length;
@@ -422,63 +411,45 @@ async function gerarPDF() {
     const yMax = Math.ceil(maxVal / 5) * 5 || 5;
     const yScale = cH / yMax;
 
-    // Título do gráfico
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
     doc.setTextColor(30, 30, 30);
     doc.text(`Baixas por Colaborador — ${nomeMes}`, mL + cW / 2, cTop - 5, { align: 'center' });
 
-    // Linhas de grade e rótulos do eixo Y
-    const gridSteps = 5;
-    for (let i = 0; i <= gridSteps; i++) {
-      const val = Math.round(yMax * i / gridSteps);
+    for (let i = 0; i <= 5; i++) {
+      const val = Math.round(yMax * i / 5);
       const gy = cTop + cH - val * yScale;
-      doc.setDrawColor(210, 210, 210);
-      doc.setLineWidth(0.2);
+      doc.setDrawColor(210, 210, 210); doc.setLineWidth(0.2);
       doc.line(mL, gy, mL + cW, gy);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(6);
-      doc.setTextColor(120, 120, 120);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(6); doc.setTextColor(120, 120, 120);
       doc.text(String(val), mL - 2, gy + 1.5, { align: 'right' });
     }
 
-    // Linhas dos eixos
-    doc.setDrawColor(130, 130, 130);
-    doc.setLineWidth(0.5);
+    doc.setDrawColor(130, 130, 130); doc.setLineWidth(0.5);
     doc.line(mL, cTop, mL, cTop + cH);
     doc.line(mL, cTop + cH, mL + cW, cTop + cH);
 
-    // Barras + valores + rótulos
     chartDados.forEach((d, i) => {
       const barH = Math.max(0.5, d.total * yScale);
       const bx = mL + i * slotW + (slotW - barW) / 2;
       const by = cTop + cH - barH;
-
       doc.setFillColor(192, 0, 0);
       doc.rect(bx, by, barW, barH, 'F');
-
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(6);
-      doc.setTextColor(40, 40, 40);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(6); doc.setTextColor(40, 40, 40);
       doc.text(String(d.total), bx + barW / 2, by - 1.5, { align: 'center' });
-
       const partes = d.nome.trim().split(' ');
       const label = partes.length > 1 ? `${partes[0]} ${partes[partes.length - 1]}` : partes[0];
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7);
-      doc.setTextColor(50, 50, 50);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(50, 50, 50);
       doc.text(label, bx + barW / 2, cTop + cH + 2, { angle: -45 });
     });
   }
 
-  // ── Rodapés (passa por todas as páginas após geração) ──
   const totalPages = doc.internal.getNumberOfPages();
   for (let p = 1; p <= totalPages; p++) {
     doc.setPage(p);
     desenharRodape(p, totalPages);
   }
 
-  // ── Download ──
   const depSlug = estado.departamento.replace(/[^a-z0-9]/gi, '_');
   doc.save(`relatorio_baixas_${depSlug}_${ano}-${String(mes+1).padStart(2,'0')}.pdf`);
 }
@@ -646,5 +617,12 @@ function mostrarTela1() {
   trocarTela('tela-1');
 }
 
+// ── Tema ─────────────────────────────────────────────────
+function alternarTema() {
+  const escuro = document.body.classList.toggle('tema-escuro');
+  document.querySelector('.btn-tema').textContent =
+    escuro ? 'Alterar tema para Claro' : 'Alterar tema para Escuro';
+}
+
 // ── Init ─────────────────────────────────────────────────
-carregarDados();
+iniciarCarregamento();

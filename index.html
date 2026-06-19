@@ -19,7 +19,11 @@
   <!-- Barra superior -->
   <header class="topbar">
     <img src="dados/imagens/logo.png" alt="MG Controle" class="topbar-logo" />
-    <h1 class="topbar-title">Relatório de Tarefas - MG Controle</h1>
+    <div class="topbar-info">
+      <h1 class="topbar-title">Relatório de Tarefas - MG Controle</h1>
+      <span class="topbar-atualizacao" id="topbar-atualizacao"></span>
+    </div>
+    <button class="btn-tema" onclick="alternarTema()">Alterar tema para Escuro</button>
   </header>
 
   <!-- Breadcrumb de navegação -->
@@ -72,7 +76,6 @@
 
       <div class="relatorio-acoes">
         <button class="btn-relatorio btn-pdf" onclick="gerarPDF()">RELATÓRIO PDF</button>
-        <button class="btn-relatorio btn-excel">RELATÓRIO EXCEL</button>
       </div>
 
       <div class="baixadas-grid" id="baixadas-grid"></div>
