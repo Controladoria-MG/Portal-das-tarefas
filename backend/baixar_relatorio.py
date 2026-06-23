@@ -23,8 +23,8 @@ PASTA_DESTINO    = os.path.join(_RAIZ, "dados", "base")
 PASTA_COORDENADOR = os.path.join(_RAIZ, "dados", "coordenador")
 
 TIMEOUT_ELEMENTO   = 60
-TIMEOUT_DOWNLOAD   = 900
-TIMEOUT_SELENIUM_CMD = 900
+TIMEOUT_DOWNLOAD   = 1500
+TIMEOUT_SELENIUM_CMD = 1500
 
 RELATORIOS = [
     {"xpath": "//h5[contains(text(),'São Paulo (Geral)')]",      "nome": "sao_paulo"},
@@ -37,6 +37,8 @@ RELATORIOS = [
 
 def _criar_driver(pasta_destino: str) -> webdriver.Chrome:
     options = Options()
+    options.add_argument("--headless=new")
+    options.add_argument("--window-size=1920,1080")
     options.add_argument("--start-maximized")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
