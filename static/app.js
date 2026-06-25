@@ -40,6 +40,12 @@ function fmtData(v) {
   return String(v);
 }
 
+function fmtCompetencia(v) {
+  if (!v) return '';
+  if (v instanceof Date) return v.toLocaleDateString('pt-BR', { month: '2-digit', year: 'numeric' });
+  return String(v);
+}
+
 function contarStatus(rows) {
   let emAtraso = 0, emAberto = 0, baixadas = 0;
   for (const r of rows) {
@@ -57,7 +63,9 @@ function _carregarArquivo(cod, arquivo) {
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const lastMod = r.headers.get('Last-Modified');
       if (lastMod) {
-        DATAS_ATUALIZACAO[cod] = new Date(lastMod).toLocaleDateString('pt-BR');
+        const d = new Date(lastMod);
+        const hora = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        DATAS_ATUALIZACAO[cod] = d.toLocaleDateString('pt-BR') + ' ' + hora;
       }
       return r.arrayBuffer();
     })
@@ -78,7 +86,15 @@ async function iniciarCarregamento() {
 
   const dataBase = Object.values(DATAS_ATUALIZACAO).find(Boolean);
   if (dataBase) {
-    document.getElementById('topbar-atualizacao').textContent = `Base atualizada em ${dataBase}`;
+    const hoje = new Date();
+    const fimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+    const fimMesStr = `${String(fimMes.getDate()).padStart(2,'0')}/${String(fimMes.getMonth()+1).padStart(2,'0')}`;
+    document.getElementById('topbar-atualizacao').innerHTML =
+      `Base atualizada em ${dataBase}` +
+      `<span class="topbar-sep">|</span>` +
+      `Tarefas com vencimento até ${fimMesStr}` +
+      `<span class="topbar-sep">|</span>` +
+      `Para atualizar seus dados recarregue a página ou pressione 'Ctrl+F5'`;
   }
 
   document.getElementById('loading').style.display = 'none';
@@ -544,12 +560,33 @@ function agendarBuscaTab() {
   buscaTimerTab = setTimeout(aplicarFiltroTab, 200);
 }
 
+function coordenadorMudou(prefixo) {
+  const coordSel = document.getElementById(`${prefixo}-coordenador`).value;
+  const sort = arr => arr.sort((a, b) => String(a).localeCompare(String(b), 'pt-BR'));
+  const rowsFiltradas = coordSel
+    ? estado.depRows.filter(r => String(r.Coordenador || '') === coordSel)
+    : estado.depRows;
+
+  const respAtual = document.getElementById(`${prefixo}-responsavel`).value;
+  popularSelect(`${prefixo}-responsavel`, sort([...new Set(rowsFiltradas.map(r => r.UsuarioResponsavel).filter(Boolean))]));
+
+  const opcoes = [...document.getElementById(`${prefixo}-responsavel`).options].map(o => o.value);
+  if (respAtual && !opcoes.includes(respAtual)) {
+    document.getElementById(`${prefixo}-responsavel`).value = '';
+  }
+
+  if (prefixo === 'rel') aplicarFiltroRel();
+  else aplicarFiltroTab();
+}
+
 function limparFiltros(prefixo) {
   const obj = prefixo === 'rel' ? filtrosRel : filtrosTab;
   [`${prefixo}-coordenador`, `${prefixo}-responsavel`, `${prefixo}-grupo`]
     .forEach(id => document.getElementById(id).value = '');
   document.getElementById(`${prefixo}-busca`).value = '';
   obj.coordenador = ''; obj.responsavel = ''; obj.grupo = ''; obj.busca = '';
+  const sort = arr => arr.sort((a, b) => String(a).localeCompare(String(b), 'pt-BR'));
+  popularSelect(`${prefixo}-responsavel`, sort([...new Set(estado.depRows.map(r => r.UsuarioResponsavel).filter(Boolean))]));
   if (prefixo === 'rel') renderRelatorios(estado.depRows);
   else renderTabela(estado.abaAtiva);
 }
@@ -570,7 +607,7 @@ function renderTabela(status) {
   const corpo = document.getElementById('tabela-corpo');
 
   if (!rows.length) {
-    corpo.innerHTML = `<tr><td colspan="7" class="tabela-vazia">Nenhuma tarefa encontrada.</td></tr>`;
+    corpo.innerHTML = `<tr><td colspan="8" class="tabela-vazia">Nenhuma tarefa encontrada.</td></tr>`;
     return;
   }
 
@@ -588,6 +625,7 @@ function renderTabela(status) {
     return `<tr>
       <td>${cliente}</td>
       <td>${esc(r.Grupo)}</td>
+      <td>${fmtCompetencia(r.Competencia)}</td>
       <td>${esc(r.Titulo)}</td>
       <td>${esc(r.UsuarioResponsavel)}</td>
       <td>${fmtData(r.DataVencimento)}</td>

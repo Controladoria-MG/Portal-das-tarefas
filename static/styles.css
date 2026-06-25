@@ -152,6 +152,11 @@ body {
   font-size: 0.72rem;
 }
 
+.topbar-sep {
+  margin: 0 14px;
+  color: rgba(255, 255, 255, 0.25);
+}
+
 .btn-tema {
   margin-left: auto;
   background: rgba(255, 255, 255, 0.15);
