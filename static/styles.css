@@ -148,7 +148,7 @@ body {
 }
 
 .topbar-atualizacao {
-  color: rgba(255, 255, 255, 0.55);
+  color: #ffffff;
   font-size: 0.72rem;
 }
 
@@ -712,6 +712,20 @@ body.tema-escuro .filtro-item select {
 .btn-limpar:hover {
   border-color: #C00000;
   color: #C00000;
+}
+
+/* ── Contador de tarefas ── */
+.tab-contador {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  letter-spacing: 0.3px;
+}
+
+.tab-contador span {
+  color: #C00000;
+  font-size: 0.95rem;
 }
 
 /* ── Tabs ── */

@@ -532,8 +532,11 @@ function filtrarRows(rows, f) {
     if (f.responsavel && String(r.UsuarioResponsavel || '') !== f.responsavel) return false;
     if (f.grupo       && String(r.Grupo || '')              !== f.grupo)       return false;
     if (f.busca) {
-      const hay = [r.CodCliente, r.RazaoSocial, r.Grupo, r.Titulo, r.UsuarioResponsavel, r.Coordenador, r.Comentario]
-        .map(v => String(v || '').toLowerCase()).join('\0');
+      const hay = [
+        r.CodCliente, r.RazaoSocial, r.Grupo, r.Titulo,
+        r.UsuarioResponsavel, r.Coordenador,
+        fmtCompetencia(r.Competencia), fmtData(r.DataVencimento), fmtData(r.DataPrevisaoConclusao)
+      ].map(v => String(v || '').toLowerCase()).join('\0');
       if (!hay.includes(f.busca)) return false;
     }
     return true;
@@ -605,6 +608,11 @@ function sortRows(rows) {
 function renderTabela(status) {
   const rows = sortRows(filtrarRows(estado.depRows.filter(r => r.Status === status), filtrosTab));
   const corpo = document.getElementById('tabela-corpo');
+  const contador = document.getElementById('tab-contador');
+
+  contador.innerHTML = rows.length
+    ? `<span>${rows.length.toLocaleString('pt-BR')}</span> Tarefa${rows.length !== 1 ? 's' : ''}`
+    : '';
 
   if (!rows.length) {
     corpo.innerHTML = `<tr><td colspan="8" class="tabela-vazia">Nenhuma tarefa encontrada.</td></tr>`;
@@ -625,9 +633,9 @@ function renderTabela(status) {
     return `<tr>
       <td>${cliente}</td>
       <td>${esc(r.Grupo)}</td>
-      <td>${fmtCompetencia(r.Competencia)}</td>
       <td>${esc(r.Titulo)}</td>
       <td>${esc(r.UsuarioResponsavel)}</td>
+      <td>${fmtCompetencia(r.Competencia)}</td>
       <td>${fmtData(r.DataVencimento)}</td>
       <td>${fmtData(r.DataPrevisaoConclusao)}</td>
       <td>${colCmt}</td>
