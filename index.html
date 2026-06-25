@@ -57,7 +57,7 @@
       <div class="filtros-barra">
         <div class="filtro-item">
           <label for="rel-coordenador">Coordenação</label>
-          <select id="rel-coordenador" onchange="aplicarFiltroRel()"><option value="">Todos</option></select>
+          <select id="rel-coordenador" onchange="coordenadorMudou('rel')"><option value="">Todos</option></select>
         </div>
         <div class="filtro-item">
           <label for="rel-responsavel">Responsável</label>
@@ -88,7 +88,7 @@
       <div class="filtros-barra">
         <div class="filtro-item">
           <label for="tab-coordenador">Coordenação</label>
-          <select id="tab-coordenador" onchange="aplicarFiltroTab()"><option value="">Todos</option></select>
+          <select id="tab-coordenador" onchange="coordenadorMudou('tab')"><option value="">Todos</option></select>
         </div>
         <div class="filtro-item">
           <label for="tab-responsavel">Responsável</label>
@@ -105,6 +105,8 @@
         <button class="btn-limpar" onclick="limparFiltros('tab')">Limpar</button>
       </div>
 
+      <div class="tab-contador" id="tab-contador"></div>
+
       <div class="tabs">
         <button class="tab ativo" data-status="Em Atraso" onclick="mudarAba(this)">Em Atraso</button>
         <button class="tab" data-status="Em Aberto" onclick="mudarAba(this)">Em Aberto</button>
@@ -118,6 +120,7 @@
               <th>Grupo</th>
               <th>Tarefa</th>
               <th>Responsável</th>
+              <th>Competência</th>
               <th>Vencimento</th>
               <th>Previsão</th>
               <th>Comentário</th>
