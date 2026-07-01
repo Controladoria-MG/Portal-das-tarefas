@@ -20,7 +20,32 @@ const estado = {
 };
 
 const filtrosRel = { coordenador: '', responsavel: '', grupo: '', busca: '' };
-const filtrosTab = { coordenador: '', responsavel: '', grupo: '', busca: '' };
+
+// ── Filtros da tabela de Tarefas (estilo Excel) ────────────
+function clienteLabel(r) {
+  const cod = String(r.CodCliente || '').trim();
+  const raz = String(r.RazaoSocial || '').trim();
+  return cod && raz ? `${cod} - ${raz}` : (cod || raz);
+}
+
+const COLUNAS_TAB = [
+  { key: 'cliente',     label: 'Cliente',     valor: r => clienteLabel(r) },
+  { key: 'grupo',       label: 'Grupo',       valor: r => String(r.Grupo || '') },
+  { key: 'tarefa',      label: 'Tarefa',      valor: r => String(r.Titulo || '') },
+  { key: 'coordenador', label: 'Coordenação', valor: r => String(r.Coordenador || '') },
+  { key: 'responsavel', label: 'Responsável', valor: r => String(r.UsuarioResponsavel || '') },
+  { key: 'competencia', label: 'Competência', valor: r => fmtCompetencia(r.Competencia), ordem: r => r.Competencia instanceof Date ? r.Competencia.getTime() : 0 },
+  { key: 'vencimento',  label: 'Vencimento',  valor: r => fmtData(r.DataVencimento), ordem: r => r.DataVencimento instanceof Date ? r.DataVencimento.getTime() : 0 },
+  { key: 'previsao',    label: 'Previsão',    valor: r => fmtData(r.DataPrevisaoConclusao), ordem: r => r.DataPrevisaoConclusao instanceof Date ? r.DataPrevisaoConclusao.getTime() : 0 },
+];
+
+const filtrosTab = {
+  busca: '',
+  excluidos: Object.fromEntries(COLUNAS_TAB.map(c => [c.key, new Set()])),
+};
+let filtroColunaAberta = null;
+let draftExcluidos = null;
+
 let buscaTimerRel = null;
 let buscaTimerTab = null;
 
@@ -477,9 +502,11 @@ function mostrarTela3(dep) {
   estado.abaAtiva     = 'Em Atraso';
 
   Object.assign(filtrosRel, { coordenador: '', responsavel: '', grupo: '', busca: '' });
-  Object.assign(filtrosTab, { coordenador: '', responsavel: '', grupo: '', busca: '' });
+  filtrosTab.busca = '';
+  COLUNAS_TAB.forEach(col => filtrosTab.excluidos[col.key] = new Set());
+  document.getElementById('tab-busca').value = '';
   popularFiltrosPrefixo('rel', estado.depRows);
-  popularFiltrosPrefixo('tab', estado.depRows);
+  renderFiltroColunas();
 
   setBreadcrumb(['Painel de controle', estado.unidade.nome, dep]);
   renderPlacares('placares-tela3', estado.depRows);
@@ -548,19 +575,9 @@ function aplicarFiltroRel() {
   renderRelatorios(filtrarRows(estado.depRows, filtrosRel));
 }
 
-function aplicarFiltroTab() {
-  lerFiltros('tab', filtrosTab);
-  renderTabela(estado.abaAtiva);
-}
-
 function agendarBuscaRel() {
   clearTimeout(buscaTimerRel);
   buscaTimerRel = setTimeout(aplicarFiltroRel, 200);
-}
-
-function agendarBuscaTab() {
-  clearTimeout(buscaTimerTab);
-  buscaTimerTab = setTimeout(aplicarFiltroTab, 200);
 }
 
 function coordenadorMudou(prefixo) {
@@ -578,21 +595,195 @@ function coordenadorMudou(prefixo) {
     document.getElementById(`${prefixo}-responsavel`).value = '';
   }
 
-  if (prefixo === 'rel') aplicarFiltroRel();
-  else aplicarFiltroTab();
+  aplicarFiltroRel();
 }
 
 function limparFiltros(prefixo) {
-  const obj = prefixo === 'rel' ? filtrosRel : filtrosTab;
+  const obj = filtrosRel;
   [`${prefixo}-coordenador`, `${prefixo}-responsavel`, `${prefixo}-grupo`]
     .forEach(id => document.getElementById(id).value = '');
   document.getElementById(`${prefixo}-busca`).value = '';
   obj.coordenador = ''; obj.responsavel = ''; obj.grupo = ''; obj.busca = '';
   const sort = arr => arr.sort((a, b) => String(a).localeCompare(String(b), 'pt-BR'));
   popularSelect(`${prefixo}-responsavel`, sort([...new Set(estado.depRows.map(r => r.UsuarioResponsavel).filter(Boolean))]));
-  if (prefixo === 'rel') renderRelatorios(estado.depRows);
-  else renderTabela(estado.abaAtiva);
+  renderRelatorios(estado.depRows);
 }
+
+// ── Filtros da tabela de Tarefas (estilo Excel) ────────────
+function renderFiltroColunas() {
+  const cont = document.getElementById('filtro-colunas-tab');
+  cont.innerHTML = COLUNAS_TAB.map(col => `
+    <div class="filtro-coluna" id="filtro-coluna-${col.key}">
+      <button type="button" class="filtro-col-btn" onclick="toggleFiltroColuna('${col.key}')">
+        <span>${esc(col.label)}</span>
+        <span class="filtro-col-seta">&#9662;</span>
+      </button>
+      <div class="filtro-col-painel hidden" id="painel-${col.key}"></div>
+    </div>
+  `).join('');
+  atualizarIndicadoresFiltro();
+}
+
+function atualizarIndicadoresFiltro() {
+  COLUNAS_TAB.forEach(col => {
+    const btn = document.querySelector(`#filtro-coluna-${col.key} .filtro-col-btn`);
+    if (btn) btn.classList.toggle('filtro-ativo', filtrosTab.excluidos[col.key].size > 0);
+  });
+}
+
+function linhasBaseTab() {
+  return estado.depRows.filter(r => r.Status === estado.abaAtiva);
+}
+
+function aplicarExcluidos(rows, excluidos, ignorarCol) {
+  return rows.filter(r => {
+    for (const col of COLUNAS_TAB) {
+      if (col.key === ignorarCol) continue;
+      const excl = excluidos[col.key];
+      if (excl && excl.size && excl.has(col.valor(r))) return false;
+    }
+    return true;
+  });
+}
+
+function aplicarBuscaTab(rows) {
+  if (!filtrosTab.busca) return rows;
+  const b = filtrosTab.busca;
+  return rows.filter(r => {
+    const hay = [
+      r.CodCliente, r.RazaoSocial, r.Grupo, r.Titulo,
+      r.UsuarioResponsavel, r.Coordenador,
+      fmtCompetencia(r.Competencia), fmtData(r.DataVencimento), fmtData(r.DataPrevisaoConclusao)
+    ].map(v => String(v || '').toLowerCase()).join('\0');
+    return hay.includes(b);
+  });
+}
+
+function filtrarRowsTab(rows) {
+  return aplicarBuscaTab(aplicarExcluidos(rows, filtrosTab.excluidos, null));
+}
+
+function toggleFiltroColuna(key) {
+  const painel = document.getElementById(`painel-${key}`);
+  const estavaAberto = !painel.classList.contains('hidden');
+  fecharPaineisFiltro();
+  if (estavaAberto) return;
+  abrirPainelFiltro(key);
+}
+
+function fecharPaineisFiltro() {
+  document.querySelectorAll('.filtro-col-painel').forEach(p => p.classList.add('hidden'));
+  filtroColunaAberta = null;
+  draftExcluidos = null;
+}
+
+function abrirPainelFiltro(key) {
+  const col = COLUNAS_TAB.find(c => c.key === key);
+  const painel = document.getElementById(`painel-${key}`);
+
+  const rowsBase = aplicarBuscaTab(aplicarExcluidos(linhasBaseTab(), filtrosTab.excluidos, key));
+  const valoresOrdem = new Map();
+  rowsBase.forEach(r => {
+    const v = col.valor(r);
+    if (!valoresOrdem.has(v)) valoresOrdem.set(v, col.ordem ? col.ordem(r) : v);
+  });
+  const opcoes = [...valoresOrdem.keys()].sort((a, b) => {
+    if (a === '') return 1;
+    if (b === '') return -1;
+    return col.ordem
+      ? valoresOrdem.get(a) - valoresOrdem.get(b)
+      : String(a).localeCompare(String(b), 'pt-BR');
+  });
+
+  draftExcluidos = new Set(filtrosTab.excluidos[key]);
+  filtroColunaAberta = key;
+
+  painel.innerHTML = `
+    <input type="text" class="filtro-col-busca" placeholder="Pesquisar..." oninput="filtrarOpcoesColuna(this.value)" />
+    <label class="filtro-col-opcao filtro-col-marcartudo">
+      <input type="checkbox" id="chk-marcar-tudo" ${draftExcluidos.size === 0 ? 'checked' : ''} onchange="marcarTudoColuna(this.checked)" />
+      <span>Selecionar tudo</span>
+    </label>
+    <div class="filtro-col-lista" id="lista-${key}">
+      ${opcoes.length ? opcoes.map(v => `
+        <label class="filtro-col-opcao" data-valor="${esc(v)}">
+          <input type="checkbox" value="${esc(v)}" ${draftExcluidos.has(v) ? '' : 'checked'} onchange="alternarOpcaoColuna(this)" />
+          <span title="${v ? esc(v) : '(Vazias)'}">${v ? esc(v) : '<em>(Vazias)</em>'}</span>
+        </label>
+      `).join('') : '<div class="filtro-col-vazio">Nenhuma opção</div>'}
+    </div>
+    <div class="filtro-col-acoes">
+      <button type="button" class="filtro-col-cancelar" onclick="fecharPaineisFiltro()">Cancelar</button>
+      <button type="button" class="filtro-col-ok" onclick="aplicarFiltroColuna()">OK</button>
+    </div>
+  `;
+  painel.classList.remove('hidden');
+  painel.querySelector('.filtro-col-busca').focus();
+}
+
+function filtrarOpcoesColuna(texto) {
+  const t = texto.trim().toLowerCase();
+  document.querySelectorAll(`#lista-${filtroColunaAberta} .filtro-col-opcao`).forEach(el => {
+    const valor = (el.dataset.valor || '').toLowerCase();
+    el.classList.toggle('hidden', Boolean(t) && !valor.includes(t));
+  });
+}
+
+function alternarOpcaoColuna(chk) {
+  if (chk.checked) draftExcluidos.delete(chk.value);
+  else draftExcluidos.add(chk.value);
+  const todasMarcadas = ![...document.querySelectorAll(`#lista-${filtroColunaAberta} input[type=checkbox]`)]
+    .some(c => !c.checked);
+  document.getElementById('chk-marcar-tudo').checked = todasMarcadas;
+}
+
+function marcarTudoColuna(checked) {
+  document.querySelectorAll(`#lista-${filtroColunaAberta} input[type=checkbox]`).forEach(c => {
+    c.checked = checked;
+    if (checked) draftExcluidos.delete(c.value);
+    else draftExcluidos.add(c.value);
+  });
+}
+
+function aplicarFiltroColuna() {
+  if (!filtroColunaAberta) return;
+  filtrosTab.excluidos[filtroColunaAberta] = draftExcluidos;
+  fecharPaineisFiltro();
+  atualizarIndicadoresFiltro();
+  renderTabela(estado.abaAtiva);
+}
+
+function aplicarFiltroTab() {
+  filtrosTab.busca = document.getElementById('tab-busca').value.trim().toLowerCase();
+  renderTabela(estado.abaAtiva);
+}
+
+function agendarBuscaTab() {
+  clearTimeout(buscaTimerTab);
+  buscaTimerTab = setTimeout(aplicarFiltroTab, 200);
+}
+
+function limparFiltrosTab() {
+  COLUNAS_TAB.forEach(col => filtrosTab.excluidos[col.key] = new Set());
+  filtrosTab.busca = '';
+  document.getElementById('tab-busca').value = '';
+  fecharPaineisFiltro();
+  atualizarIndicadoresFiltro();
+  renderTabela(estado.abaAtiva);
+}
+
+document.addEventListener('click', (e) => {
+  if (!filtroColunaAberta) return;
+  const painelAberto = document.getElementById(`painel-${filtroColunaAberta}`);
+  const btnAberto = document.querySelector(`#filtro-coluna-${filtroColunaAberta} .filtro-col-btn`);
+  if (painelAberto && !painelAberto.contains(e.target) && btnAberto && !btnAberto.contains(e.target)) {
+    fecharPaineisFiltro();
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && filtroColunaAberta) fecharPaineisFiltro();
+});
 
 function sortRows(rows) {
   return [...rows].sort((a, b) => {
@@ -606,7 +797,7 @@ function sortRows(rows) {
 }
 
 function renderTabela(status) {
-  const rows = sortRows(filtrarRows(estado.depRows.filter(r => r.Status === status), filtrosTab));
+  const rows = sortRows(filtrarRowsTab(estado.depRows.filter(r => r.Status === status)));
   const corpo = document.getElementById('tabela-corpo');
   const contador = document.getElementById('tab-contador');
 

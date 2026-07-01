@@ -696,6 +696,167 @@ body.tema-escuro .filtro-item select {
   outline: none;
 }
 
+.filtro-colunas-tab {
+  display: contents;
+}
+
+/* ── Filtros estilo Excel (coluna) ── */
+.filtro-coluna {
+  position: relative;
+}
+
+.filtro-col-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  padding: 7px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-input);
+  background-color: var(--bg-input);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background-color 0.15s;
+  white-space: nowrap;
+}
+
+.filtro-col-btn:hover {
+  border-color: #aaaaaa;
+}
+
+.filtro-col-btn.filtro-ativo {
+  border-color: #C00000;
+  color: #C00000;
+  background-color: rgba(192, 0, 0, 0.08);
+}
+
+.filtro-col-seta {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+.filtro-col-btn.filtro-ativo .filtro-col-seta {
+  color: #C00000;
+}
+
+.filtro-col-painel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 50;
+  width: 250px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filtro-col-busca {
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  padding: 6px 9px;
+  font-size: 0.8rem;
+  color: var(--text-input);
+  background-color: var(--bg-input);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.filtro-col-busca:focus {
+  border-color: #C00000;
+  box-shadow: 0 0 0 3px rgba(192, 0, 0, 0.18);
+}
+
+.filtro-col-lista {
+  max-height: 220px;
+  overflow-y: auto;
+  border-top: 1px solid var(--border-row);
+  border-bottom: 1px solid var(--border-row);
+  padding: 4px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.filtro-col-opcao {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 3px;
+  font-size: 0.8rem;
+  color: var(--text-input);
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+.filtro-col-opcao:hover {
+  background-color: var(--bg-hover-row);
+}
+
+.filtro-col-opcao span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filtro-col-opcao input[type="checkbox"] {
+  flex-shrink: 0;
+  accent-color: #C00000;
+  cursor: pointer;
+}
+
+.filtro-col-marcartudo {
+  font-weight: 700;
+}
+
+.filtro-col-vazio {
+  font-size: 0.78rem;
+  color: var(--text-lighter);
+  font-style: italic;
+  padding: 6px 3px;
+}
+
+.filtro-col-acoes {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.filtro-col-ok,
+.filtro-col-cancelar {
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  padding: 6px 14px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.filtro-col-ok {
+  background-color: #C00000;
+  color: #ffffff;
+  border-color: #C00000;
+}
+
+.filtro-col-ok:hover {
+  background-color: #a30000;
+}
+
+.filtro-col-cancelar {
+  background: none;
+  color: var(--text-muted);
+}
+
+.filtro-col-cancelar:hover {
+  border-color: #C00000;
+  color: #C00000;
+}
+
 .btn-limpar {
   background: none;
   border: 1px solid var(--border-default);

@@ -86,23 +86,12 @@
       <div class="secao-titulo">Tarefas</div>
 
       <div class="filtros-barra">
-        <div class="filtro-item">
-          <label for="tab-coordenador">Coordenação</label>
-          <select id="tab-coordenador" onchange="coordenadorMudou('tab')"><option value="">Todos</option></select>
-        </div>
-        <div class="filtro-item">
-          <label for="tab-responsavel">Responsável</label>
-          <select id="tab-responsavel" onchange="aplicarFiltroTab()"><option value="">Todos</option></select>
-        </div>
-        <div class="filtro-item">
-          <label for="tab-grupo">Grupo</label>
-          <select id="tab-grupo" onchange="aplicarFiltroTab()"><option value="">Todos</option></select>
-        </div>
+        <div class="filtro-colunas-tab" id="filtro-colunas-tab"></div>
         <div class="filtro-item filtro-busca">
           <label for="tab-busca">Buscar</label>
           <input type="text" id="tab-busca" placeholder="Digite qualquer coisa..." oninput="agendarBuscaTab()" />
         </div>
-        <button class="btn-limpar" onclick="limparFiltros('tab')">Limpar</button>
+        <button class="btn-limpar" onclick="limparFiltrosTab()">Limpar</button>
       </div>
 
       <div class="tab-contador" id="tab-contador"></div>
