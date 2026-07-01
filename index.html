@@ -85,13 +85,15 @@
     <div class="secao">
       <div class="secao-titulo">Tarefas</div>
 
-      <div class="filtros-barra">
-        <div class="filtro-colunas-tab" id="filtro-colunas-tab"></div>
+      <div class="filtros-barra filtros-barra-tab">
         <div class="filtro-item filtro-busca">
           <label for="tab-busca">Buscar</label>
           <input type="text" id="tab-busca" placeholder="Digite qualquer coisa..." oninput="agendarBuscaTab()" />
         </div>
-        <button class="btn-limpar" onclick="limparFiltrosTab()">Limpar</button>
+        <div class="filtro-linha-colunas">
+          <div class="filtro-colunas-tab" id="filtro-colunas-tab"></div>
+          <button class="btn-limpar" onclick="limparFiltrosTab()">Limpar</button>
+        </div>
       </div>
 
       <div class="tab-contador" id="tab-contador"></div>

@@ -615,7 +615,7 @@ function renderFiltroColunas() {
   cont.innerHTML = COLUNAS_TAB.map(col => `
     <div class="filtro-coluna" id="filtro-coluna-${col.key}">
       <button type="button" class="filtro-col-btn" onclick="toggleFiltroColuna('${col.key}')">
-        <span>${esc(col.label)}</span>
+        <span class="filtro-col-label">${esc(col.label)}</span>
         <span class="filtro-col-seta">&#9662;</span>
       </button>
       <div class="filtro-col-painel hidden" id="painel-${col.key}"></div>

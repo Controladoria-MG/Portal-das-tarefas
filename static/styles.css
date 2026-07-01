@@ -696,6 +696,23 @@ body.tema-escuro .filtro-item select {
   outline: none;
 }
 
+.filtros-barra-tab {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.filtro-linha-colunas {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.filtro-linha-colunas .btn-limpar {
+  align-self: center;
+  flex: 0 0 auto;
+}
+
 .filtro-colunas-tab {
   display: contents;
 }
@@ -703,21 +720,31 @@ body.tema-escuro .filtro-item select {
 /* ── Filtros estilo Excel (coluna) ── */
 .filtro-coluna {
   position: relative;
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .filtro-col-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
   border: 1px solid var(--border-default);
   border-radius: 4px;
-  padding: 7px 12px;
+  padding: 7px 10px;
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--text-input);
   background-color: var(--bg-input);
   cursor: pointer;
   transition: border-color 0.15s, color 0.15s, background-color 0.15s;
+}
+
+.filtro-col-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -734,6 +761,7 @@ body.tema-escuro .filtro-item select {
 .filtro-col-seta {
   font-size: 0.65rem;
   color: var(--text-muted);
+  flex-shrink: 0;
 }
 
 .filtro-col-btn.filtro-ativo .filtro-col-seta {
