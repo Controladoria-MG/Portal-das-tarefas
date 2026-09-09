@@ -5,3 +5,7 @@ node_modules/
 *.sqlite
 .DS_Store
 *.pdf
+
+# Cache local do Relatório de Distribuição (gravado pelo hub "Atualização
+# de bases"), só alimenta a coluna Doc. Situação — nunca versionado.
+dados/base/distribuicao.xlsx

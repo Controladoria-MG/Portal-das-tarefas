@@ -1003,7 +1003,7 @@ function renderTabela(status) {
     : '';
 
   if (!totalFiltrado) {
-    corpo.innerHTML = `<tr><td colspan="9" class="tabela-vazia">Nenhuma tarefa encontrada.</td></tr>`;
+    corpo.innerHTML = `<tr><td colspan="10" class="tabela-vazia">Nenhuma tarefa encontrada.</td></tr>`;
     return;
   }
 
@@ -1027,6 +1027,7 @@ function renderTabela(status) {
       <td>${fmtData(r.DataVencimento)}</td>
       <td>${ehBaixado ? fmtData(r.DataBaixa) : fmtData(r.DataPrevisaoConclusao)}</td>
       <td>${esc(r.Prioridade)}</td>
+      <td>${esc(r.DocumentosSituacao)}</td>
       <td>${colCmt}</td>
     </tr>`;
   }).join('');
