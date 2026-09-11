@@ -8,6 +8,16 @@ const UNIDADES = [
   { cod: 'BPO',        nome: 'BPO',            arquivo: 'dados/base/bpo.xlsx' },
 ];
 
+// Departamentos da base SP que contam como "Gerência" no Tipo de Pendência
+// (todos os outros contam como "Operação"). Lista explícita em vez de
+// detectar por nome conter "GERENCIA", porque "GC - Administrativo" também é
+// Gerência e não tem essa palavra no nome.
+const DEPARTAMENTOS_GERENCIA = new Set([
+  'GC - ADMINISTRATIVO',
+  'GERENCIA DE CONTAS',
+  'GERENCIA MASTER',
+]);
+
 // ── Estado ───────────────────────────────────────────────
 const DADOS_UNIDADE      = {};   // cod → array de rows
 const PROMESSAS          = {};   // cod → Promise
@@ -142,7 +152,8 @@ function contarStatus(rows) {
 // Reclassifica Status ("Vencendo Hoje") e, na base SP, deriva o Tipo de
 // Pendência (Operação/Gerência) a partir do Departamento. Feito no carregamento
 // em vez de gravado na planilha porque "hoje" muda a cada acesso — se fosse
-// calculado no robô, a classificação ficaria congelada na data da última baixa.
+// calculado no momento da exportação, a classificação ficaria congelada na
+// data da última baixa.
 function processarLinhas(cod, rows) {
   const hoje = normData(new Date());
   for (const r of rows) {
@@ -151,7 +162,9 @@ function processarLinhas(cod, rows) {
       r.Status = 'Vencendo Hoje';
     }
     if (cod === 'SP') {
-      r.TipoPendencia = /GERENCIA/i.test(String(r.Departamento || '')) ? 'Gerência' : 'Operação';
+      r.TipoPendencia = DEPARTAMENTOS_GERENCIA.has(String(r.Departamento || '').trim().toUpperCase())
+        ? 'Gerência'
+        : 'Operação';
     }
   }
   return rows;
