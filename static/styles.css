@@ -118,50 +118,63 @@ body {
   display: none !important;
 }
 
-/* ── Barra superior ── */
-.topbar {
-  background-color: #C00000;
+/* ── Topbar padrão MG (cópia do Controle de Fechamentos) ── */
+.mg-topbar {
+  background: #C00000;
+  color: #fff;
   padding: 12px 32px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+
+.mg-topbar-linha {
   display: flex;
   align-items: center;
   gap: 16px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
-.topbar-logo {
+.mg-topbar-logo-wrap {
+  flex-shrink: 0;
+}
+
+.mg-topbar-logo {
   height: 42px;
   width: auto;
   object-fit: contain;
+  display: block;
 }
 
-.topbar-info {
+.mg-topbar-info {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.topbar-title {
-  color: #ffffff;
+.mg-topbar-titulo {
+  margin: 0;
+  color: #fff;
   font-size: 1.4rem;
   font-weight: 700;
   letter-spacing: 0.5px;
 }
 
-.topbar-atualizacao {
-  color: #ffffff;
+.mg-topbar-status {
+  margin: 0;
+  color: #fff;
   font-size: 0.72rem;
+  opacity: 0.95;
 }
 
-.topbar-sep {
+.mg-topbar-sep {
   margin: 0 14px;
   color: rgba(255, 255, 255, 0.25);
 }
 
-.btn-tema {
-  margin-left: auto;
+.mg-topbar-btn {
   background: rgba(255, 255, 255, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.5);
   color: #ffffff;
+  font: inherit;
   font-size: 0.8rem;
   font-weight: 600;
   padding: 6px 18px;
@@ -171,7 +184,11 @@ body {
   white-space: nowrap;
 }
 
-.btn-tema:hover {
+.mg-topbar-info + .mg-topbar-btn {
+  margin-left: auto;
+}
+
+.mg-topbar-btn:hover {
   background: rgba(255, 255, 255, 0.28);
 }
 

@@ -17,13 +17,17 @@
   </div>
 
   <!-- Barra superior -->
-  <header class="topbar">
-    <img src="dados/imagens/logo.png" alt="MG Controle" class="topbar-logo" />
-    <div class="topbar-info">
-      <h1 class="topbar-title">Relatório de Tarefas - MG Controle</h1>
-      <span class="topbar-atualizacao" id="topbar-atualizacao"></span>
+  <header class="mg-topbar">
+    <div class="mg-topbar-linha">
+      <div class="mg-topbar-logo-wrap">
+        <img src="dados/imagens/logo.png" alt="MG Controle" class="mg-topbar-logo" />
+      </div>
+      <div class="mg-topbar-info">
+        <h1 class="mg-topbar-titulo">Relatório de Tarefas - MG Controle</h1>
+        <div class="mg-topbar-status" id="topbar-atualizacao"></div>
+      </div>
+      <button class="mg-topbar-btn btn-tema" type="button" onclick="alternarTema()">Alterar tema para Escuro</button>
     </div>
-    <button class="btn-tema" onclick="alternarTema()">Alterar tema para Escuro</button>
   </header>
 
   <!-- Breadcrumb de navegação -->

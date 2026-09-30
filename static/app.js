@@ -205,9 +205,9 @@ async function iniciarCarregamento() {
     const fimMesStr = `${String(fimMes.getDate()).padStart(2,'0')}/${String(fimMes.getMonth()+1).padStart(2,'0')}`;
     document.getElementById('topbar-atualizacao').innerHTML =
       `Base atualizada em ${dataBase}` +
-      `<span class="topbar-sep">|</span>` +
+      `<span class="mg-topbar-sep">|</span>` +
       `Tarefas com vencimento até ${fimMesStr}` +
-      `<span class="topbar-sep">|</span>` +
+      `<span class="mg-topbar-sep">|</span>` +
       `Para atualizar seus dados recarregue a página ou pressione 'Ctrl+F5'`;
   }
 
