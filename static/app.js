@@ -208,7 +208,7 @@ async function iniciarCarregamento() {
       `<span class="mg-topbar-sep">|</span>` +
       `Tarefas com vencimento até ${fimMesStr}` +
       `<span class="mg-topbar-sep">|</span>` +
-      `Para atualizar seus dados recarregue a página ou pressione 'Ctrl+F5'`;
+      `Para atualizar seus dados recarregue a página usando "Ctrl+F5"`;
   }
 
   document.getElementById('loading').style.display = 'none';

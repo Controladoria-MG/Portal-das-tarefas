@@ -1094,3 +1094,9 @@ body.tema-escuro .filtro-item select {
   border-left: 2px solid #C00000;
   padding-left: 8px;
 }
+
+/* Linha de status do topbar nunca quebra linha (2026-09-30): sem espaço,
+   corta com reticências em vez de jogar o resto pra baixo. */
+.mg-topbar-info { min-width: 0; }
+.mg-topbar-status { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mg-topbar-btn { flex-shrink: 0; }
