@@ -51,7 +51,27 @@ function usuarioBaixaEfetivo(r) {
   return baixa;
 }
 
-const TODAS_CHAVES_TAB = ['cliente', 'grupo', 'tarefa', 'coordenador', 'responsavel', 'baixadopor', 'competencia', 'vencimento', 'previsao', 'databaixa', 'prioridade', 'comentario', 'tipopendencia'];
+const TODAS_CHAVES_TAB = ['cliente', 'grupo', 'tarefa', 'tributacao', 'coordenador', 'responsavel', 'baixadopor', 'competencia', 'vencimento', 'previsao', 'databaixa', 'prioridade', 'comentario', 'tipopendencia'];
+
+// De-para do RegimeTributario do MG Controle para o nome exibido na coluna Tributação.
+const DEPARA_TRIBUTACAO = {
+  'federal - lucro presumido':      'Lucro Presumido',
+  'federal - imune':                'Imune',
+  'federal - l real -trimestral':   'Lucro Real',
+  'federal - sn':                   'Simples Nacional',
+  'federal - lucro real - anual':   'Lucro Real',
+  'federal - l.real - mensal':      'Lucro Real',
+  'federal - domestico':            'Doméstico',
+  'federal - mei':                  'MEI',
+  'federal - autonomo':             'Autônomo',
+};
+
+function tributacao(r) {
+  const bruto = String(r.RegimeTributario || '').trim();
+  if (!bruto) return '';
+  const chave = bruto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return DEPARA_TRIBUTACAO[chave] || bruto.replace(/^federal\s*-\s*/i, '');
+}
 
 function comentarioStatus(r) {
   return String(r.Comentario || '').trim() ? 'Com comentário' : 'Sem comentário';
@@ -74,6 +94,7 @@ function colunasTab() {
     { key: 'cliente',     label: 'Cliente',     valor: r => clienteLabel(r) },
     { key: 'grupo',       label: 'Grupo',       valor: r => String(r.Grupo || '') },
     { key: 'tarefa',      label: 'Tarefa',      valor: r => String(r.Titulo || '') },
+    { key: 'tributacao',  label: 'Tributação',  valor: tributacao },
     { key: 'coordenador', label: 'Coordenação', valor: r => String(r.Coordenador || '') },
     colResponsavel,
     { key: 'competencia', label: 'Competência', valor: r => fmtCompetencia(r.Competencia), ordem: r => ordemData(r.Competencia) },
@@ -828,7 +849,7 @@ function aplicarBuscaTab(rows) {
   const b = filtrosTab.busca;
   return rows.filter(r => {
     const hay = [
-      r.CodCliente, r.RazaoSocial, r.Grupo, r.Titulo,
+      r.CodCliente, r.RazaoSocial, r.Grupo, r.Titulo, tributacao(r),
       estado.abaAtiva === 'Baixado' ? usuarioBaixaEfetivo(r) : r.UsuarioResponsavel, r.Coordenador,
       fmtCompetencia(r.Competencia), fmtData(r.DataVencimento),
       estado.abaAtiva === 'Baixado' ? fmtData(r.DataBaixa) : fmtData(r.DataPrevisaoConclusao)
@@ -1016,7 +1037,7 @@ function renderTabela(status) {
     : '';
 
   if (!totalFiltrado) {
-    corpo.innerHTML = `<tr><td colspan="10" class="tabela-vazia">Nenhuma tarefa encontrada.</td></tr>`;
+    corpo.innerHTML = `<tr><td colspan="11" class="tabela-vazia">Nenhuma tarefa encontrada.</td></tr>`;
     return;
   }
 
@@ -1035,6 +1056,7 @@ function renderTabela(status) {
       <td>${cliente}</td>
       <td>${esc(r.Grupo)}</td>
       <td>${esc(r.Titulo)}</td>
+      <td>${esc(tributacao(r))}</td>
       <td>${ehBaixado ? esc(usuarioBaixaEfetivo(r)) : esc(r.UsuarioResponsavel)}</td>
       <td>${fmtCompetencia(r.Competencia)}</td>
       <td>${fmtData(r.DataVencimento)}</td>
